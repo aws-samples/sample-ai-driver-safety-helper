@@ -1,0 +1,20 @@
+schemaVersion: 2.0.0
+metadata:
+  name: video-analysis-project
+components:
+  - name: dev
+    container:
+      image: public.ecr.aws/aws-mde/universal-image:latest
+commands:
+  - id: install
+    exec:
+      component: dev
+      commandLine: "python -m pip install --upgrade pip && pip install -r requirements.txt && npm install -g aws-cdk"
+  - id: build
+    exec:
+      component: dev
+      commandLine: "cd cdk && cdk synth"
+  - id: test
+    exec:
+      component: dev
+      commandLine: "python -m pytest"
