@@ -118,7 +118,7 @@ def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: s
                 }]
             }],
             system=[{
-                "text": "Summarize the following observations into a concise video analysis report."
+                "text": "Provide a JSON object with two fields, DO NOT provide any preamble; first one is a severity based on a risk of a high impact accident. Use high, medium, low for severity. For second field, include a short paragraph summary of the event."
             }]
         )
 
