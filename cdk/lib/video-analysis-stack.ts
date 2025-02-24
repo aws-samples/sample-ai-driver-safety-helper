@@ -37,6 +37,7 @@ export class VideoAnalysisStack extends Stack {
       }),
       timeout: Duration.minutes(15),
       memorySize: 2048,
+      tracing: lambda.Tracing.ACTIVE,
       environment: {
         INPUT_BUCKET_NAME: inputBucket.bucketName,
         INFERENCE_PROFILE_ARN: inferenceProfileArn,
