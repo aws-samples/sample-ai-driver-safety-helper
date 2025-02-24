@@ -80,8 +80,8 @@ The deployment will create:
    ```
    {
    "front_video_key": "front.mp4",
-   "driver_video_key": "front.mp4",
-   "side_video_key": "front.mp4"
+   "driver_video_key": "driver.mp4",
+   "side_video_key": "side.mp4"
    }
    ```
    When the Lambda function completes, you will see the summary of the video analysis.
@@ -96,6 +96,12 @@ To avoid incurring charges, clean up the resources when no longer needed:
 - The input S3 bucket is setup to block public access, enforce SSL, and with a lifecycle policy
 - The process Lambda function's IAM role is setup with the minimum permissions required for S3, and Bedrock access
 - Amazon Q Developer full project scan run reported 0 issues
+- S3 permissions: Uses the S3 bucket's `grantRead()` method which creates least-privilege read permissions
+- Bedrock permissions: Uses a specific policy statement with exact actions needed:
+   - `bedrock:InvokeModel`
+   - `bedrock:InvokeModelWithResponseStream`
+- cdk_nag library and bandit tool are used to confirm infrastructure and application code patterns are using secure constructs
+
 
 
 
