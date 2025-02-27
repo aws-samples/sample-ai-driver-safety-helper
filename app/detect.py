@@ -1,19 +1,31 @@
+"""
+Video frame processing and analysis using Amazon Bedrock.
+
+This module provides functionality for combining frames from multiple
+video sources and analyzing them using Amazon Bedrock's AI capabilities.
+"""
+
+import argparse
+import base64
+import json
+import os
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import boto3
 import cv2
 import numpy as np
-import boto3
-import json
-import base64
-import os
-import argparse
-from typing import List
 
-def add_caption(frame, text):
+
+def add_caption(frame: np.ndarray, text: str) -> np.ndarray:
     """
-    Add caption to the top of the frame
+    Add caption to the top of the frame.
     
     Args:
-        frame (numpy.ndarray): Input frame
-        text (str): Caption text
+        frame: Input frame
+        text: Caption text
+        
+    Returns:
+        Frame with caption added
     """
     text_height = 40
     caption_bg = np.zeros((text_height, frame.shape[1], 3), dtype=np.uint8)
@@ -26,25 +38,34 @@ def add_caption(frame, text):
     text_x = (frame.shape[1] - text_size[0]) // 2
     text_y = (text_height + text_size[1]) // 2
     
-    cv2.putText(caption_bg, text, (text_x, text_y), font, font_scale, (255, 255, 255), font_thickness)
+    cv2.putText(
+        caption_bg, text, (text_x, text_y), font, font_scale,
+        (255, 255, 255), font_thickness
+    )
     
     return np.vstack((caption_bg, frame))
 
-def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: str, batch_size: int = 5) -> str:
+
+def analyze_frames_with_bedrock(
+    frame_paths: List[str],
+    inference_profile_arn: str,
+    batch_size: int = 5
+) -> str:
     """
-    Analyze frames using Amazon Bedrock Converse API
+    Analyze frames using Amazon Bedrock Converse API.
     
     Args:
-        frame_paths (List[str]): List of paths to frame images
-        inference_profile_arn (str): ARN of the Bedrock inference profile
-        batch_size (int): Number of frames to process in each batch
+        frame_paths: List of paths to frame images
+        inference_profile_arn: ARN of the Bedrock inference profile
+        batch_size: Number of frames to process in each batch
     
     Returns:
-        str: Summary of the video analysis
+        Summary of the video analysis
     """
     bedrock_runtime = boto3.client(
         service_name="bedrock-runtime",
-        region_name=inference_profile_arn.split(":")[3]  # Extract region from ARN
+        # Extract region from ARN
+        region_name=inference_profile_arn.split(":")[3]
     )
 
     all_observations = []
@@ -66,7 +87,8 @@ def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: s
                         "image": {
                             "format": "jpeg",
                             "source": {
-                                "bytes": image_bytes  # Send raw bytes directly
+                                # Send raw bytes directly
+                                "bytes": image_bytes
                             }
                         }
                     }]
@@ -76,8 +98,10 @@ def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: s
         messages.append({
             "role": "user",
             "content": [{
-                "text": "Analyze these synchronized camera views and describe what you observe. "
-                        "Focus on any safety concerns or notable events."
+                "text": (
+                    "Analyze these synchronized camera views and describe what "
+                    "you observe. Focus on any safety concerns or notable events."
+                )
             }]
         })
         
@@ -87,14 +111,19 @@ def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: s
                 modelId=inference_profile_arn,
                 messages=messages,
                 system=[{
-                    "text": "You are an expert at analyzing multi-camera surveillance footage. "
-                           "Provide detailed observations about activities, risks, and notable events "
-                           "from the synchronized camera views (Front, Driver, and Side views)."
+                    "text": (
+                        "You are an expert at analyzing multi-camera surveillance "
+                        "footage. Provide detailed observations about activities, "
+                        "risks, and notable events from the synchronized camera "
+                        "views (Front, Driver, and Side views)."
+                    )
                 }]
             )
             
             # Extract content from response
-            if 'output' in response and 'message' in response['output'] and 'content' in response['output']['message']:
+            if ('output' in response and 
+                    'message' in response['output'] and 
+                    'content' in response['output']['message']):
                 observation = response['output']['message']['content'][0]['text']
                 all_observations.append(observation)
             else:
@@ -114,16 +143,26 @@ def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: s
             messages=[{
                 "role": "user",
                 "content": [{
-                    "text": f"Please provide a concise summary of the following observations:\n\n{combined_observations}"
+                    "text": (
+                        f"Please provide a concise summary of the following "
+                        f"observations:\n\n{combined_observations}"
+                    )
                 }]
             }],
             system=[{
-                "text": "Provide a JSON object with two fields, DO NOT provide any preamble; first one is a severity based on a risk of a high impact accident. Use high, medium, low for severity. For second field, include a short paragraph summary of the event."
+                "text": (
+                    "Provide a JSON object with two fields, DO NOT provide any "
+                    "preamble; first one is a severity based on a risk of a high "
+                    "impact accident. Use high, medium, low for severity. For "
+                    "second field, include a short paragraph summary of the event."
+                )
             }]
         )
 
         # Extract content from final response
-        if 'output' in final_response and 'message' in final_response['output'] and 'content' in final_response['output']['message']:
+        if ('output' in final_response and 
+                'message' in final_response['output'] and 
+                'content' in final_response['output']['message']):
             return final_response['output']['message']['content'][0]['text']
         else:
             print(f"Unexpected final response format: {final_response}")
@@ -134,13 +173,21 @@ def analyze_frames_with_bedrock(frame_paths: List[str], inference_profile_arn: s
         return "Error generating summary"
 
 
-
-
-
-
-def combine_frames(videos, output_dir='/tmp/combined_frames', target_fps=2):
+def combine_frames(
+    videos: List[str],
+    output_dir: str = '/tmp/combined_frames',
+    target_fps: int = 2
+) -> Tuple[List[str], int]:
     """
-    Combine frames from multiple videos side by side at specified FPS
+    Combine frames from multiple videos side by side at specified FPS.
+    
+    Args:
+        videos: List of video file paths
+        output_dir: Directory to save combined frames
+        target_fps: Target frames per second to extract
+        
+    Returns:
+        Tuple containing list of frame paths and number of frames
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -155,7 +202,7 @@ def combine_frames(videos, output_dir='/tmp/combined_frames', target_fps=2):
     frame_counts = [int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) for cap in captures]
     fps_rates = [cap.get(cv2.CAP_PROP_FPS) for cap in captures]
     
-    skip_frames = [int(fps/target_fps) for fps in fps_rates]
+    skip_frames = [int(fps / target_fps) for fps in fps_rates]
     min_frames = min(frame_counts)
     
     frame_number = 0
@@ -191,7 +238,9 @@ def combine_frames(videos, output_dir='/tmp/combined_frames', target_fps=2):
             
         combined_frame = np.hstack(resized_frames)
         
-        output_path = os.path.join(output_dir, f'frame_{output_frame_number:04d}.jpg')
+        output_path = os.path.join(
+            output_dir, f'frame_{output_frame_number:04d}.jpg'
+        )
         cv2.imwrite(output_path, combined_frame)
         frame_paths.append(output_path)
         
@@ -203,18 +252,53 @@ def combine_frames(videos, output_dir='/tmp/combined_frames', target_fps=2):
     
     return frame_paths, output_frame_number
 
-def parse_arguments():
-    """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description='Process videos and analyze with Bedrock Nova Pro')
-    parser.add_argument('--front-video', required=True, help='Path to front view video')
-    parser.add_argument('--driver-video', required=True, help='Path to driver view video')
-    parser.add_argument('--side-video', required=True, help='Path to side view video')
-    parser.add_argument('--inference-profile', required=True, help='ARN of the Bedrock inference profile')
-    parser.add_argument('--output-dir', default='output_frames', help='Directory for output frames')
-    parser.add_argument('--target-fps', type=int, default=2, help='Target frames per second')
+
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command line arguments.
+    
+    Returns:
+        Parsed command line arguments
+    """
+    parser = argparse.ArgumentParser(
+        description='Process videos and analyze with Bedrock Nova Pro'
+    )
+    parser.add_argument(
+        '--front-video',
+        required=True,
+        help='Path to front view video'
+    )
+    parser.add_argument(
+        '--driver-video',
+        required=True,
+        help='Path to driver view video'
+    )
+    parser.add_argument(
+        '--side-video',
+        required=True,
+        help='Path to side view video'
+    )
+    parser.add_argument(
+        '--inference-profile',
+        required=True,
+        help='ARN of the Bedrock inference profile'
+    )
+    parser.add_argument(
+        '--output-dir',
+        default='output_frames',
+        help='Directory for output frames'
+    )
+    parser.add_argument(
+        '--target-fps',
+        type=int,
+        default=2,
+        help='Target frames per second'
+    )
     return parser.parse_args()
 
-def main():
+
+def main() -> None:
+    """Main function to process videos and analyze frames."""
     # Parse command line arguments
     args = parse_arguments()
     
@@ -244,5 +328,5 @@ def main():
     print(summary)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

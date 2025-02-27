@@ -1,8 +1,7 @@
 FROM public.ecr.aws/lambda/python:3.12
 
 # Copy function code
-COPY lambda_function.py ${LAMBDA_TASK_ROOT}
-COPY detect.py ${LAMBDA_TASK_ROOT}
+COPY lambda_function.py detect.py ${LAMBDA_TASK_ROOT}
 
 # Install the function's dependencies
 COPY requirements.txt  .

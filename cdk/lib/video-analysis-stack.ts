@@ -31,6 +31,31 @@ export class VideoAnalysisStack extends Stack {
     });   
 
     // Create Lambda function from Docker image
+    // Create custom role for Lambda with explicit permissions
+    const lambdaRole = new iam.Role(this, 'VideoAnalysisRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Custom role for video analysis Lambda function'
+    });
+
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+      resources: [`arn:aws:logs:${this.region}:${this.account}:log-group:/aws/lambda/*`]
+    }));
+
+    lambdaRole.addToPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'xray:PutTraceSegments',
+        'xray:PutTelemetryRecords'
+      ],
+      resources: ['*']
+    }));
+    // This lambda is not in a VPC to keep it simple and cost-effective for this sample project
     const lambdaFunction = new lambda.DockerImageFunction(this, 'VideoAnalysisFunction', {
       code: lambda.DockerImageCode.fromImageAsset('../app', {
         file: 'Dockerfile'
@@ -38,6 +63,7 @@ export class VideoAnalysisStack extends Stack {
       timeout: Duration.minutes(15),
       memorySize: 2048,
       tracing: lambda.Tracing.ACTIVE,
+      role: lambdaRole,
       environment: {
         INPUT_BUCKET_NAME: inputBucket.bucketName,
         INFERENCE_PROFILE_ARN: inferenceProfileArn,
@@ -63,12 +89,8 @@ export class VideoAnalysisStack extends Stack {
       })
     );
 
-    // Add stack-level suppressions for Lambda basic execution role, S3 read access, and Bedrock cross-region inference
+    // Add stack-level suppressions for S3 read access and Bedrock cross-region inference
     NagSuppressions.addStackSuppressions(this, [
-      {
-        id: 'AwsSolutions-IAM4',
-        reason: 'Lambda basic execution role is acceptable for this use case'
-      },
       {
         id: 'AwsSolutions-IAM5',
         reason: 'Lambda S3 grantRead and Bedrock require cross-region access',
