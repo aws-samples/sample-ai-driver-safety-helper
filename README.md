@@ -160,3 +160,8 @@ To avoid incurring charges, clean up the resources when no longer needed:
   - `bedrock:InvokeModel`
   - `bedrock:InvokeModelWithResponseStream`
 - cdk_nag library and bandit tool are used to confirm infrastructure and application code patterns are using secure constructs
+- Amaozn Bedrock model invocation logging is disabled by default and can be enabled by following these [steps](https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html)
+
+
+
+

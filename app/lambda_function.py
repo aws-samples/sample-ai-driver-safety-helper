@@ -1,5 +1,4 @@
 # Runtime: Python 3.12
-import os
 import json
 import os
 import shutil
@@ -14,11 +13,13 @@ s3 = boto3.client('s3')
 # Constants
 TMP_DIR = tempfile.gettempdir()
 
+
 def download_video_from_s3(bucket: str, key: str) -> str:
     """Downloads a video from S3 and returns the local path"""
     local_path = os.path.join(TMP_DIR, os.path.basename(key))
     s3.download_file(bucket, key, local_path)
     return local_path
+
 
 def lambda_handler(event, context):
     try:
@@ -71,7 +72,7 @@ def lambda_handler(event, context):
                 'summary': summary
             }
         }
-        
+    
     except Exception as e:
         return {
             'statusCode': 500,
