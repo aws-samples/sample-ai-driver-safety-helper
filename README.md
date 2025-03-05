@@ -58,7 +58,9 @@ Below is a representative analysis output from the Amazon Nova Pro model, demons
 
 ### Clone repository
 
-   ```bash  
+   Clone this repository and change directory to the folder shown below
+
+   ```bash
    cd sample-ai-driver-safety-helper
    ```
 
@@ -78,6 +80,10 @@ Below is a representative analysis output from the Amazon Nova Pro model, demons
       --output-dir output_frames \
       --target-fps 1 
    ```
+
+### Jupyter notebook
+
+Make sure to clone the repository and open the notebook called "sample-ai-driver-safety-helper/notebooks/summarize-driver-videos.ipynb" in Amazon SageMaker Studio Lab or Amazon SageMaker AI. Follow the instructions in the notebook to summarize the videos provided in the "app/samples" folder.
 
 ### Cloud deployment
 
