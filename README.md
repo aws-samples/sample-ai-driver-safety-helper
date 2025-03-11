@@ -155,6 +155,7 @@ To avoid incurring charges, clean up the resources when no longer needed:
    cd cdk
    cdk destroy
    ```
+- Note: You might need to manually delete the content of S3 bucket. 
 
 ## Security
 
